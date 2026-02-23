@@ -31,7 +31,13 @@ def main():
     print("🔍 Bronze Tier Verification")
     print("="*60 + "\n")
 
-    vault = Path('.')
+    # Check for vault folder
+    vault = Path('AI_Employee_Vault')
+    if not vault.exists():
+        print("❌ AI_Employee_Vault folder not found!")
+        print("   Expected vault at: ./AI_Employee_Vault/")
+        return 1
+
     all_good = True
 
     print("📁 Required Folders:")
@@ -57,7 +63,7 @@ def main():
     for file, desc in files:
         all_good &= check_file(vault / file, desc)
 
-    print("\n🔧 Components:")
+    print("\n🔧 Components (in project root):")
     components = [
         ('orchestrator.py', 'Orchestrator script'),
         ('watcher.py', 'Filesystem watcher'),
@@ -67,8 +73,18 @@ def main():
         ('SECURITY.md', 'Security guidelines'),
         ('.gitignore', 'Git ignore file'),
     ]
+    root = Path('.')
     for file, desc in components:
-        all_good &= check_file(vault / file, desc)
+        all_good &= check_file(root / file, desc)
+
+    print("\n🎯 Agent Skills (in vault):")
+    skills = [
+        ('process_needs_action', 'Process Needs Action skill'),
+        ('update_dashboard', 'Update Dashboard skill'),
+    ]
+    for skill, desc in skills:
+        skill_path = vault / '.claude' / 'skills' / skill / 'skill.md'
+        all_good &= check_file(skill_path, desc)
 
     print("\n📦 Dependencies:")
     # Check if watchdog is installed
@@ -93,12 +109,13 @@ def main():
     print("   pip install -r requirements.txt\n")
     print("2. Test the workflow:")
     print("   mkdir -p drops")
-    print("   python watcher.py --vault . --drop-folder ./drops &")
+    print("   python watcher.py --vault AI_Employee_Vault --drop-folder ./drops &")
     print("   echo 'test' > drops/test.txt")
-    print("   # Check Needs_Action/ for action item\n")
+    print("   # Check AI_Employee_Vault/Needs_Action/ for action item\n")
     print("3. Run orchestrator:")
-    print("   python orchestrator.py --vault . --process-now\n")
+    print("   python orchestrator.py --vault AI_Employee_Vault --process-now\n")
     print("4. Use Claude Code:")
+    print("   cd AI_Employee_Vault")
     print("   claude .")
     print("   Then ask: 'What's in Needs_Action?'\n")
     print("5. Review documentation:")
