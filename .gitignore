@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+.obsidian/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# AI Employee - Sensitive & Temporary
+# Inbox contains raw dropped files - process and remove
+Inbox/*
+# Logs may contain sensitive info (encrypt before commit)
+Logs/*.json
+# Sensitive folders
+Pending_Approval/
+Approved/
+Rejected/
+credentials.json         # API credentials - NEVER commit
+secrets.env              # Environment file with secrets
+.env                     # Environment file
+.session/                # Browser sessions (WhatsApp, etc.)
+mcp-config.json          # MCP server configs (may contain tokens)
+
+# Operating System
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# Testing
+.pytest_cache/
+coverage.xml
+htmlcov/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Drop folders
+drops/
+drop/
+watch/
+incoming/
+
+# Logs
+*.log
+logs/
