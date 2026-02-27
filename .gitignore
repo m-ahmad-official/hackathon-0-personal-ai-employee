@@ -47,6 +47,7 @@ Pending_Approval/
 Approved/
 Rejected/
 credentials.json         # API credentials - NEVER commit
+token.json              # OAuth tokens - NEVER commit
 secrets.env              # Environment file with secrets
 .env                     # Environment file
 .session/                # Browser sessions (WhatsApp, etc.)
