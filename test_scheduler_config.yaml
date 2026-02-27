@@ -1,0 +1,16 @@
+# Test config - task runs every minute
+default_working_dir: AI_Employee_Vault
+check_interval: 10
+
+tasks:
+  - name: "test_task_every_minute"
+    schedule:
+      minute: "*"  # Every minute
+      hour: "*"
+      day: "*"
+      month: "*"
+      weekday: "*"
+    action:
+      type: "command"
+      command: "date >> scheduler_test.log && echo 'Task executed at' >> scheduler_test.log"
+      working_dir: "."

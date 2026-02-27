@@ -1,12 +1,17 @@
 # AI Employee - Python Dependencies
-# Bronze Tier
+# Bronze + Silver Tier
 
-# Filesystem watching
+# Filesystem watching (Bronze)
 watchdog>=4.0.0
 
-# Optional: For future extensions
-# google-auth>=2.0.0        # Gmail API
-# google-auth-oauthlib>=0.4.0
-# google-auth-httplib2>=0.1.0
-# google-api-python-client>=2.0.0
-# playwright>=1.40.0        # Browser automation
+# Silver Tier: Gmail API
+google-auth>=2.0.0
+google-auth-oauthlib>=0.4.0
+google-auth-httplib2>=0.1.0
+google-api-python-client>=2.0.0
+
+# Silver Tier: WhatsApp Web automation
+playwright>=1.40.0
+
+# Silver Tier: Scheduler
+pyyaml>=6.0

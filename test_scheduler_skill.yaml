@@ -1,0 +1,16 @@
+default_working_dir: AI_Employee_Vault
+check_interval: 30
+
+tasks:
+  - name: "test_update_dashboard"
+    schedule:
+      minute: "*"  # Every minute for testing
+      hour: "*"
+      day: "*"
+      month: "*"
+      weekday: "*"
+    action:
+      type: "claude_skill"
+      skill: "update_dashboard"
+      arguments: []
+      working_dir: "AI_Employee_Vault"

@@ -1,0 +1,119 @@
+# Scheduler Configuration - Silver Tier
+# Defines scheduled tasks for AI Employee automation
+
+# Default working directory ( vault path)
+default_working_dir: AI_Employee_Vault
+
+# How often to check for due tasks (seconds)
+check_interval: 60
+
+# Scheduled Tasks
+tasks:
+  # Daily: Process Needs_Action at 9:00 AM
+  - name: "process_needs_action_morning"
+    schedule:
+      minute: "0"
+      hour: "9"
+      day: "*"
+      month: "*"
+      weekday: "*"
+    action:
+      type: "orchestrator"
+      vault: "AI_Employee_Vault"
+      working_dir: "."
+
+  # Daily: Process Needs_Action at 6:00 PM
+  - name: "process_needs_action_evening"
+    schedule:
+      minute: "0"
+      hour: "18"
+      day: "*"
+      month: "*"
+      weekday: "*"
+    action:
+      type: "orchestrator"
+      vault: "AI_Employee_Vault"
+      working_dir: "."
+
+  # Every 30 minutes: Check Gmail watcher (if running as daemon)
+  # Note: Gmail watcher runs continuously, so this is just health check
+  - name: "health_check_gmail_watcher"
+    schedule:
+      minute: "*/30"
+      hour: "*"
+      day: "*"
+      month: "*"
+      weekday: "*"
+    action:
+      type: "command"
+      command: "pgrep -f gmail_watcher.py || echo 'Gmail watcher not running'"
+      working_dir: "."
+
+  # Weekly: Generate Weekly Business Briefing (Monday 8:00 AM)
+  - name: "weekly_briefing_monday"
+    schedule:
+      minute: "0"
+      hour: "8"
+      day: "*"
+      month: "*"
+      weekday: "1"  # Monday (1-7, where 1=Monday)
+    action:
+      type: "claude_skill"
+      skill: "generate_weekly_briefing"
+      arguments: []
+      working_dir: "AI_Employee_Vault"
+
+  # Daily: Update Dashboard at midnight
+  - name: "update_dashboard_midnight"
+    schedule:
+      minute: "0"
+      hour: "0"
+      day: "*"
+      month: "*"
+      weekday: "*"
+    action:
+      type: "claude_skill"
+      skill: "update_dashboard"
+      arguments: ["--verbose"]
+      working_dir: "AI_Employee_Vault"
+
+  # Hourly: Check for urgent emails (requires fast response)
+  - name: "check_urgent_emails"
+    schedule:
+      minute: "0"
+      hour: "*"
+      day: "*"
+      month: "*"
+      weekday: "*"
+    action:
+      type: "claude_skill"
+      skill: "process_email_requests"
+      arguments: ["--all"]
+      working_dir: "AI_Employee_Vault"
+
+  # Every 4 hours: LinkedIn auto-poster (if configured)
+  - name: "linkedin_post_quarterly"
+    schedule:
+      minute: "0"
+      hour: "*/4"
+      day: "*"
+      month: "*"
+      weekday: "*"
+    action:
+      type: "claude_skill"
+      skill: "linkedin_auto_poster"
+      arguments: ["--create-post"]
+      working_dir: "AI_Employee_Vault"
+
+  # Weekly: Cleanup old logs (Sunday 2:00 AM)
+  - name: "cleanup_logs_weekly"
+    schedule:
+      minute: "0"
+      hour: "2"
+      day: "*"
+      month: "*"
+      weekday: "7"  # Sunday
+    action:
+      type: "command"
+      command: "find AI_Employee_Vault/Logs -name '*.json' -mtime +30 -delete"
+      working_dir: "."
