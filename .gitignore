@@ -51,6 +51,7 @@ token.json              # OAuth tokens - NEVER commit
 secrets.env              # Environment file with secrets
 .env                     # Environment file
 .session/                # Browser sessions (WhatsApp, etc.)
+linkedin_session/        # LinkedIn browser session (cookies, auth)
 mcp-config.json          # MCP server configs (may contain tokens)
 
 # Operating System
