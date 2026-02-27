@@ -4,50 +4,298 @@
 
 ---
 
-## Bronze Tier Security Status
+## 🥈 Silver Tier Security Status
 
-✅ **Level**: Local-only (no external integrations)
-✅ **Data Location**: 100% local, no cloud
-✅ **Encryption**: Not required (no external transmission)
-⚠️ **Credentials**: None stored yet (no APIs used)
+✅ **Level**: Local-first with external API integrations (Gmail, WhatsApp Web, LinkedIn)
+✅ **Data Location**: 100% local vault + cloud API access (read/write)
+✅ **Encryption**: TLS for all API calls (HTTPS)
+⚠️ **Credentials**: OAuth tokens stored locally (`credentials.json`, `token.json`)
+⚠️ **Audit Logging**: Enabled (unencrypted - avoid PII in logs)
+✅ **HITL**: Human approval required for sensitive actions
 
 ---
 
-## Threat Model (Bronze)
+## Threat Model (Silver)
 
-Since this tier only processes local files:
+With external integrations, new attack surfaces emerge:
 
 | Threat | Risk Level | Mitigation |
 |--------|-----------|------------|
-| Unauthorized file access | Medium | File system permissions |
-| Accidental data exposure | Low | .gitignore prevents commits |
-| Malware in dropped files | Medium | Manual review required |
-| Insider threat | Low | Physical access control |
+| API credential theft | **HIGH** | `.gitignore` + never commit + rotate monthly |
+| Unauthorized email sends | **HIGH** | HITL approval for new contacts + audit logs |
+| Session hijacking (WhatsApp/LinkedIn) | **MEDIUM** | Persistent sessions stored locally, never commit |
+| Data leakage in logs | **MEDIUM** | Sanitize PII before logging, encrypt logs if needed |
+| Malicious email attachments | **MEDIUM** | Do not auto-download attachments, manual review |
+|自动化误操作 | **MEDIUM** | Approval workflow + dry-run mode + rate limiting |
+| Insider threat (AI itself) | **LOW** | Sandboxed operations, read-only by default |
 
 ---
 
-## Security Practices
+## Silver Tier Security Practices
 
-### 1. File System Permissions
+### 1. Credential Management (CRITICAL)
 
+**NEVER commit these files** - they are in `.gitignore`:
+- `credentials.json` - Google OAuth client credentials (public ID + secret)
+- `token.json` - OAuth access/refresh tokens (full account access!)
+- `.env` - Any environment variables with secrets
+- `linkedin_session/` - Browser cookies (session hijacking risk)
+- `session/` - WhatsApp session data (full message access!)
+
+**Storage best practices:**
 ```bash
-# Set restrictive permissions
-chmod 700 .
-chmod 600 Dashboard.md Company_Handbook.md Business_Goals.md
-chmod 700 Needs_Action Inbox Plans Done Logs
-chmod 600 Needs_Action/*.md Logs/*.json
+# Store credentials outside project if possible
+export AI_EMPLOYEE_CONFIG_DIR="$HOME/.ai-employee"
+cp credentials.json $AI_EMPLOYEE_CONFIG_DIR/
+# Create symlink: ln -s $AI_EMPLOYEE_CONFIG_DIR/credentials.json ./
+
+# Or use environment variables (preferred for production)
+export GMAIL_CLIENT_ID="..."
+export GMAIL_CLIENT_SECRET="..."
+# Modify code to read from os.getenv()
 ```
 
-### 2. Never Commit Sensitive Data
+**Rotation schedule:**
+- OAuth tokens: Refresh automatically (60-day lifetime)
+- Client secrets: Rotate quarterly
+- Session data: Delete and re-login if device compromised
 
-The `.gitignore` prevents these files from being committed:
-- `Inbox/*` - Raw dropped files
-- `Logs/*.json` - May contain PII
-- `credentials.json` - Would contain API keys
-- `.env` - Environment secrets
-- `drops/` - Drop folder contents
+### 2. Human-in-the-Loop (HITL) - Required for Sensitive Actions
 
-**Before committing**: Review with `git status` to ensure no sensitive files are staged.
+From `Company_Handbook.md`:
+
+**Auto-Approve (No Human Review):**
+- Email replies to **known contacts** (in address book from previous emails)
+- File organization and categorization
+- Reading data from external sources
+- Creating draft responses
+
+**Always Require Approval:**
+- ✗ Sending emails to **new recipients** (first-time contact)
+- ✗ Any financial transactions (payments, transfers)
+- ✗ Posting to social media (LinkedIn, Twitter)
+- ✗ Accessing new services for the first time
+- ✗ Deleting data from vault
+- ✗ Changing system configuration
+- ✗ Browser automation beyond monitored sessions
+
+**Approval Workflow:**
+1. AI creates request file in `/Pending_Approval/` with full context
+2. Human reviews manually (or via `approval_manager.py`)
+3. Human moves to `/Approved/` or `/Rejected/`
+4. Only then does executor perform the action
+5. Result logged with approver identity (future: `approved_by` field)
+
+### 3. Audit Logging (Every Action Must Be Logged)
+
+All actions logged to `/Logs/YYYY-MM-DD.json`:
+
+```json
+{
+  "timestamp": "2026-02-28T02:44:48.123456",
+  "action_type": "email_processed",
+  "source_file": "EMAIL_client_abc123_20260228_024304.md",
+  "sender": "client@example.com",
+  "subject": "Inquiry about services",
+  "response_type": "reply",
+  "approval_required": true,
+  "approval_status": "approved",
+  "approver": "human_username",  // Future: track who approved
+  "plan_created": "PLAN_EMAIL_...md",
+  "executed_at": "2026-02-28T02:50:00Z",
+  "result": "success",
+  "message_id": "17c9c14f71d777b8"
+}
+```
+
+**Logging Requirements:**
+- Timestamp in ISO 8601 format
+- Actor (component that triggered action)
+- Action type (email_sent, whatsapp_processed, linkedin_posted)
+- Parameters (sanitized - mask API keys, tokens, PII)
+- Result (success/failure + error message)
+- Approval status (required? granted? by whom?)
+
+**Encryption:**
+Currently logs are plain JSON. If logs contain sensitive data (email bodies, phone numbers):
+```python
+from cryptography.fernet import Fernet
+cipher = Fernet(encryption_key)
+encrypted_log = cipher.encrypt(json.dumps(entry).encode())
+```
+Future: Add log encryption at rest.
+
+### 4. Permission Boundaries (What AI Can Do Automatically)
+
+| Action | Auto-Approve? | Requires Approval | Rationale |
+|--------|---------------|-------------------|-----------|
+| Read files from vault | ✅ | - | Read-only, safe |
+| Write files to vault | ✅ | - | Within vault bounds |
+| Move files within vault | ✅ | - | Atomic operations |
+| Create plans in /Plans/ | ✅ | - | Planning is safe |
+| Update Dashboard.md | ✅ | - | Status only |
+| Read Gmail (watch only) | ✅ | - | Passive monitoring |
+| **Send email to known contact** | ✅ | - | Historical relationship |
+| **Send email to NEW contact** | ❌ | ✅ | First contact = risk |
+| Reply to WhatsApp (known) | ✅ | - | Existing conversation |
+| Reply to WhatsApp (new) | ❌ | ✅ | New contact |
+| Post to LinkedIn | ❌ | ✅ | Public-facing, brand risk |
+| Delete vault data | ❌ | ✅ | Irreversible |
+| Access browser sessions | ❌ | ✅ | Session hijacking risk |
+| Execute shell commands | ❌ | ✅ | Arbitrary code exec |
+
+### 5. Communication Security
+
+- **All API calls use HTTPS** (enforced by libraries: Gmail API, etc.)
+- **TLS certificate verification** enabled by default (do not disable)
+- **Certificate pinning** (future): For critical services, pin certificates
+- **No self-signed certs** in production
+
+### 6. Sandbox Development
+
+For Silver/Gold development and testing:
+
+- **Separate test accounts**:
+  - Gmail: Use a dedicated test account, not your personal
+  - WhatsApp: Use a separate number/device for testing
+  - LinkedIn: Use a test profile, not your main
+
+- **DRY_RUN mode**:
+  ```python
+  if config.DRY_RUN:
+      logger.info(f"[DRY_RUN] Would send email to {to}")
+      return {"success": True, "dry_run": True}
+  else:
+      # Actually send
+  ```
+
+- **Rate limiting**:
+  ```python
+  from ratelimiter import RateLimiter
+  limiter = RateLimiter(max_calls=10, period=60)  # 10 per minute
+  with limiter:
+      gmail_api.send_email(...)
+  ```
+
+- **Quotas and budget caps**:
+  - Gmail: 100 emails/day (adjust as needed)
+  - LinkedIn: 10 posts/day (rate limit)
+  - WhatsApp: 100 messages/day (Twilio costs)
+
+- **Error handling**:
+  - Never leak secrets in error messages
+  - Sanitize exceptions: `except Exception as e: logger.error(f"Failed: {str(e)[:100]}")  # Truncate`
+
+---
+
+## Incident Response
+
+If you discover a security incident:
+
+1. **Unauthorized API access** (suspicious emails sent):
+   - Revoke OAuth tokens immediately: Google Account → Security → Third-party access
+   - Check logs to determine scope of breach
+   - Rotate all credentials (new `credentials.json`, `token.json`)
+   - Review approval workflow - was it bypassed?
+
+2. **Credential leak** (accidentally committed secrets):
+   - **Immediate**: Rotate credentials (new client secret, new tokens)
+   - **Git**: Remove from history with `git filter-branch` or `bfg`
+   - **GitHub**: Revoke exposed secrets, check GitHub secrets if Actions used
+   - **Notify**: If personal data leaked, inform affected parties
+
+3. **AI made unauthorized action** (sent email without approval):
+   - Stop all watchers immediately
+   - Review logs to identify root cause
+   - Fix approval logic (bug in skill?)
+   - Consider rolling back to known-good commit
+   - Add additional approval gate if needed
+
+4. **Session hijacking** (someone else accessed LinkedIn/WhatsApp session):
+   - Delete `linkedin_session/` and `session/` folders
+   - Change passwords for those accounts
+   - Re-authenticate from secure device
+
+5. **Data breach** (vault accessed by unauthorized party):
+   - Assume all data in vault is compromised
+   - Move to new vault (new directory, new credentials)
+   - Revoke all API access
+   - Encrypt backups going forward
+
+---
+
+## Compliance Considerations
+
+- **GDPR**: Data stays local (good), but emails may contain EU personal data
+  - If processing EU data, ensure lawful basis (consent, legitimate interest)
+  - Provide right to erasure - delete PII from vault on request
+
+- **HIPAA**: **DO NOT** store Protected Health Information (PHI) in vault unless:
+  - Vault is encrypted at rest (use `cryptography` library)
+  - Access is logged and audited
+  - Business Associate Agreement (BAA) in place with AI provider
+
+- **PCI-DSS**: **NEVER** store full credit card numbers, CVV, or track data
+  - Tokenize if payment processing needed
+  - Use Stripe/Braintree instead of direct card storage
+
+- **Terms of Service**:
+  - WhatsApp: Automation may violate ToS - use at your own risk
+  - LinkedIn: Automation can get account restricted - use cautiously
+  - Gmail: Google has sending limits (500/day for free accounts)
+
+---
+
+## Security Checklist (Before Going Live)
+
+Before using AI Employee with production data:
+
+- [ ] All secrets (`credentials.json`, `token.json`, `.env`) in `.gitignore`
+- [ ] `.gitignore` checked for completeness
+- [ ] Run `git status --short` - no sensitive files staged
+- [ ] Test `git push` - verify no secrets uploaded (GitHub may block)
+- [ ] File permissions set: `chmod 700 AI_Employee_Vault/`, `chmod 600 *.md Logs/*.json`
+- [ ] Approval workflow tested end-to-end
+- [ ] Audit logs reviewed for completeness
+- [ ] DRY_RUN mode works for all actions
+- [ ] Rate limiting configured (if batch processing)
+- [ ] Error handling doesn't log full email bodies (PII)
+- [ ] Backup vault to encrypted location (e.g., `gpg --symmetric --cipher-algo AES256 vault.tar.gz`)
+- [ ] Incident response plan documented (who to call, how to stop)
+- [ ] Separate test credentials (not personal Gmail)
+- [ ] 2FA enabled on all integrated accounts (Gmail, LinkedIn)
+- [ ] OAuth consent screen published (if in production)
+- [ ] `company_approval_email@yourdomain.com` - use dedicated email for approvals
+- [ ] Legal review: Are you allowed to automate these communications?
+
+---
+
+## Resources
+
+- **OWASP API Security Top 10** - https://owasp.org/API-Project/
+- **Anthropic Responsible AI** - https://www.anthropic.com/responsible-ai
+- **Local-first security** - https://www.inkandswitch.com/local-first/
+- **MCP Security** - https://modelcontextprotocol.io/docs/security
+- **Google OAuth 2.0** - https://developers.google.com/identity/protocols/oauth2
+- **NIST Cybersecurity Framework** - https://www.nist.gov/cyberframework
+
+---
+
+## Reporting Security Vulnerabilities
+
+If you discover a security issue in this project:
+
+1. **Do NOT open a public GitHub issue** (do not disclose publicly)
+2. Email security@anthropic.com (if issue is in Claude-related code)
+3. Or open a private security advisory on GitHub (if repository owner)
+
+---
+
+**Remember**: You are legally responsible for the AI's actions. Understand the security model before processing real data.
+
+*Last updated: 2026-02-28*
+*Tier: Silver*
+*Audit Date: 2026-02-28 (initial)*
 
 ### 3. Sandbox Development
 
