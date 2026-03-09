@@ -1,0 +1,20 @@
+{
+  "id": "44697c1f-5087-4c27-836c-9e2651d64b20",
+  "timestamp": "2026-03-09T04:03:51.243799",
+  "type": "odoo.invoice.created",
+  "source": "odoo-mcp",
+  "priority": "normal",
+  "data": {
+    "invoice_id": 100,
+    "amount": 500.0,
+    "customer": "client@example.com"
+  },
+  "retry_count": 0,
+  "max_retries": 3,
+  "last_error": null,
+  "consumed_by": [],
+  "processed_by": [
+    "print_consumer"
+  ],
+  "processed_at": "2026-03-09T04:03:51.414705"
+}

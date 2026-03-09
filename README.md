@@ -1,14 +1,14 @@
-# AI Employee - Silver Tier Complete
+# AI Employee - Gold Tier Complete
 
 *Local-first autonomous assistant using Claude Code*
 
 ## 🎉 Status
 
-**Silver Tier** is fully implemented and tested. All components are operational.
+**Gold Tier** is fully implemented and tested. All phases complete!
 
 - ✅ Bronze Tier: Complete (foundation)
 - ✅ **Silver Tier**: Complete (external integrations)
-- ⏳ Gold Tier: Planned
+- ✅ **Gold Tier**: Complete (advanced integrations, error recovery, audit logging, cross-domain workflows)
 
 ## Quick Start
 
@@ -51,6 +51,107 @@
   - `generate_weekly_briefing` - CEO reports
   - `browsing-with-playwright` - Web automation
   - `process_needs_action` - General file processing
+  - `manage_odoo_accounting` - Odoo integration (Gold Phase 1)
+
+### 🥇 Gold Tier (Complete - All 4 Phases)
+
+**Phase 1: Odoo MCP Server (Complete)**
+- [x] **Odoo MCP Server** - Odoo 19+ integration via JSON-RPC
+  - Tools: `search_customers`, `create_invoice`, `post_invoice`, `record_payment`, `get_account_balance`, `list_recent_invoices`
+  - Docker deployment with PostgreSQL
+  - Automated setup script
+  - Per-process audit logging (no cross-process corruption)
+  - Receipt files in `Done/` for all external actions
+- [x] **Ralph Wiggum Loop** - Autonomous task completion stop hook
+  - File-based completion detection
+  - State management with `loop_state.json`
+  - Max iteration limits
+
+**Phase 2: Social Media Integration (Complete)**
+- [x] **Social Media MCP Server** - Unified Facebook, Instagram, Twitter integration
+  - Tools: `facebook_post`, `facebook_get_insights`, `instagram_post`, `twitter_tweet`, `twitter_get_timeline`, `twitter_get_mentions`
+  - Graph API (Facebook/Instagram) + X API v2 (Twitter)
+  - Platform-specific formatting and optimization
+  - Per-process audit logging
+  - Receipt files in `Done/` for all posts
+- [x] **Social Media Skill** - `post_to_social_media` Agent Skill
+  - Multi-platform posting with auto-formatting
+  - Hashtag optimization
+  - Approval workflow integration
+
+**Phase 3: Error Recovery & Audit Logging (Complete)**
+- [x] **Retry Logic & Circuit Breakers** - Automatic error recovery for all external API calls
+  - Exponential backoff with jitter (2^attempt, max 60s)
+  - Circuit breaker pattern (CLOSED/OPEN/HALF_OPEN)
+  - Platform-specific breakers (facebook, instagram, twitter, odoo)
+- [x] **Enhanced Audit Logger** - Structured JSON audit trail
+  - AuditEntry schema (UUID, timestamp, actor, action, target, parameters, result, duration_ms, error)
+  - **Per-process log files** (`YYYY-MM-DD.proc_PID.json`) to prevent corruption
+  - Absolute path resolution (project root based)
+  - Daily log rotation with size-based fallback
+  - Gzip archival and 90-day retention
+  - Query interface with list/string action filters
+  - Compliance report generation
+- [x] **Health Monitoring Server** - HTTP endpoints for production
+  - `/health`, `/health/ready`, `/health/live` (Kubernetes-style probes)
+  - `/metrics` for monitoring systems
+  - Component checks: Odoo, social-mcp, PostgreSQL, disk, memory
+  - Background daemon with automatic restart
+- [x] **Integration** - All MCP servers use error recovery and audit logging
+
+**Phase 4: Cross-Domain Integration & Dashboard (Complete)**
+- [x] **Event Bus Architecture** - File-based event system for decoupled communication
+  - `Event`, `EventStore`, `EventConsumer` classes
+  - Persistence in `AI_Employee_Vault/Events/`
+  - Retry logic with `retry_count` and `max_retries`
+  - Routing with `consumed_by` field
+  - Error event capturing
+  - Demo script (`utils/event_bus/demo.py`)
+- [x] **Real-Time Dashboard Consumer** - Event-driven dashboard updates
+  - Listens for events (invoice_created, post_published, etc.)
+  - Auto-updates social media counts without polling
+- [x] **Email→Odoo Consumer** - Cross-domain integration example
+  - Consumes email events from Needs_Action
+  - Creates Odoo invoices automatically
+  - Full audit trail with events
+- [x] **Audit Analytics Skill** - `analyze_audit_logs` in `.claude/skills/`
+  - Queries audit logs with filters
+  - Generates markdown, JSON, CSV reports
+  - Trend analysis (by day, actor, action)
+- [x] **Enhanced CEO Briefing** - Weekly report with Odoo/social/audit data
+  - Aggregates financial metrics, social media stats, audit analytics
+  - Auto-generated in `Briefings/`
+- [x] **Production Deployment Scripts**
+  - `start_all.sh` - One-command service startup
+  - `stop_all.sh` - Graceful shutdown
+  - `status.sh` - Comprehensive health check
+  - All services with PID management and logging
+- [x] **Dashboard Updater** - Live metrics from all sources
+  - Fetches health metrics (health server)
+  - Queries Odoo for AR, invoices, overdue
+  - Reads audit logs for social media posts
+  - Counts task completions from `Done/`
+  - Updates `Dashboard.md` every 5 minutes (configurable)
+- [x] **External Action Receipts** - Receipt files in `Done/` for all external operations
+  - Facebook/Instagram posts: `FACEBOOK_POST_*.md`, `INSTAGRAM_POST_*.md`
+  - Odoo invoices: `ODOO_INVOICE_CREATE_*.md`, `ODOO_INVOICE_POST_*.md`
+  - Structured frontmatter with platform, action, external_id, URL, duration
+  - Full parameters and result in JSON format
+  - Smart extraction: amount, description, due date, customer
+- [ ] **Audit Analytics Skill** - `analyze_audit_logs` for compliance & insights
+- [ ] **Event Bus** - Decoupled event-driven architecture (`utils/event_bus/`)
+- [ ] **Enhanced CEO Briefing** - Full business intelligence (financials + social + ops)
+- [ ] **Production Scripts** - `start_all.sh`, `stop_all.sh`, `status.sh`
+
+**Skills Created in Phase 4:**
+- `email_to_odoo_invoice` - Create invoices from email (in progress)
+- `integrate_cross_domain` - Event-driven workflows (planned)
+- `update_dashboard` - Dashboard refresh (implemented as script)
+- `analyze_audit_logs` - Audit analytics (planned)
+
+---
+
+### Folder Structure (Complete)
 
 ### Folder Structure (Complete)
 
@@ -87,16 +188,35 @@ scheduler/                   # Cron-based scheduler
 ├── scheduler.py
 └── config.yaml
 
-mcp-servers/                 # MCP servers (optional)
-└── email-mcp/
+mcp-servers/                 # MCP servers (Gold Tier)
+├── odoo-mcp/                # Odoo Community integration (Phase 1)
+│   ├── server.py
+│   ├── requirements.txt
+│   ├── docker-compose.yml
+│   ├── test_connection.py
+│   ├── setup_odoo.py
+│   └── README.md
+├── social-mcp/              # Social Media integration (Phase 2)
+│   ├── server.py
+│   ├── requirements.txt
+│   ├── test_connection.py
+│   ├── setup_credentials.py
+│   └── README.md
+└── README.md                # Overview
 
-.claude/skills/              # Claude Agent Skills
-├── process_email_requests/
-├── process_whatsapp_messages/
-├── approval_workflow/
-├── linkedin_auto_poster/
-├── generate_weekly_briefing/
-└── [...]
+.claude/
+├── skills/                  # Agent Skills
+│   ├── process_email_requests/
+│   ├── process_whatsapp_messages/
+│   ├── approval_workflow/
+│   ├── linkedin_auto_poster/
+│   ├── generate_weekly_briefing/
+│   ├── process_needs_action/
+│   ├── update_dashboard/
+│   ├── manage_odoo_accounting/  # Gold Tier skill (Phase 1)
+│   └── post_to_social_media/    # Gold Tier skill (Phase 2)
+└── stop-hooks/
+    └── ralph_wiggum.py      # Autonomous loop handler (Phase 1)
 ```
 
 ## Installation

@@ -1,0 +1,14 @@
+{
+  "id": "6a545dff-0258-4eb3-b4f1-9b8419985090",
+  "timestamp": "2026-03-09T04:03:51.639334",
+  "type": "odoo.invoice.created",
+  "source": "test",
+  "priority": "normal",
+  "data": {
+    "test": true
+  },
+  "retry_count": 0,
+  "max_retries": 3,
+  "last_error": null,
+  "consumed_by": []
+}

@@ -320,15 +320,19 @@ Check `Briefings/` for output.
 
 ---
 
-## Future (Gold Tier)
+## Gold Tier Enhancements (Phase 4+)
 
-- Integrate Odoo accounting data
-- Financial statements (P&L, balance sheet)
-- Team performance metrics
-- Client satisfaction scores
-- Automated distribution (email to board/investors)
-- Historical trend analysis
-- Predictive insights (next week forecast)
+- ✅ **Odoo Integration**: Full financial data (revenue, AR, top customers, overdue invoices)
+- ✅ **Social Media Metrics**: Post counts, reach, engagement from audit logs
+- ✅ **Health Monitoring**: System uptime, component status
+- ✅ **Event Bus**: Real-time data aggregation
+- ✅ **Audit Analytics**: Task success rates, error trends, approval metrics
+- ⚠️ **Financial Statements**: P&L and balance sheet (requires Odoo statement export)
+- ⚠️ **Automated Distribution**: Email briefing to stakeholders
+- ⚠️ **Historical Trends**: Week-over-week comparisons
+- ⚠️ **Predictive Insights**: Forecasting based on AR and trends
+
+**Implementation:** `generate_weekly_briefing/generate.py` (Gold Tier Phase 4)
 
 ---
 

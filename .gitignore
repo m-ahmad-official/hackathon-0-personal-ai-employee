@@ -54,6 +54,15 @@ secrets.env              # Environment file with secrets
 linkedin_session/        # LinkedIn browser session (cookies, auth)
 mcp-config.json          # MCP server configs (may contain tokens)
 
+# MCP Servers - Gold Tier
+mcp-servers/*/.env       # Odoo/social media API keys
+mcp-servers/odoo-mcp/odoo_data/  # Odoo persistence (Docker)
+mcp-servers/odoo-mcp/postgres_data/  # PostgreSQL data
+
+# Health Monitor - Phase 3
+utils/error_recovery/health_server.pid  # PID file
+utils/error_recovery/health_server.log  # Health monitor logs
+
 # Operating System
 Thumbs.db
 .DS_Store

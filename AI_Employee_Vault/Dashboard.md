@@ -6,10 +6,30 @@ status: active
 
 # AI Employee Dashboard
 
-*Your personal autonomous assistant - Local-first, privacy-focused*
+## 🔄 Live Metrics (Last Updated: 2026-03-09 05:02:01)
+
+**System Health**
+- Overall Status: UNKNOWN
+- Uptime: 28.1 minutes
+- Odoo: ✅
+- PostgreSQL: ❌
+
+**Financial (Odoo)**
+- Accounts Receivable: $1,840.00
+- Invoices (Last 7 Days): 2
+- Overdue Invoices: 2
+- Total Invoiced (7D): $1,840.00
+
+**Social Media (Last 24h)**
+- Facebook Posts: 0
+- Instagram Posts: 0
+- Twitter Tweets: 0
+
+**Task Automation**
+- Completed Today: 4
+- Completed This Week: 4
 
 ---
-
 ## System Overview
 
 | Metric | Value | Status |

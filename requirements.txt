@@ -15,3 +15,6 @@ playwright>=1.40.0
 
 # Silver Tier: Scheduler
 pyyaml>=6.0
+
+# Gold Tier Phase 3: Error Recovery & Monitoring
+psutil>=5.9.0  # Process and system monitoring for health checks

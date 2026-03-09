@@ -1,0 +1,13 @@
+[
+  {
+    "id": "bfeef41e-e154-4505-9641-ceb83247af2f",
+    "timestamp": "2026-03-09T01:36:59.539688",
+    "level": "info",
+    "actor": "test",
+    "action": "test_action",
+    "target": "test_target",
+    "parameters": { "key": "value" },
+    "result": { "status": "ok" },
+    "audit_trail": []
+  }
+]

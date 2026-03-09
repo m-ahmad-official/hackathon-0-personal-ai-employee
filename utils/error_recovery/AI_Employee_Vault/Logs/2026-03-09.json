@@ -1,0 +1,30 @@
+[
+  {
+    "id": "health_1773003225",
+    "timestamp": "2026-03-09T01:53:45.868654",
+    "level": "warning",
+    "actor": "health_monitor",
+    "action": "component_unhealthy",
+    "target": "social_mcp",
+    "context": {
+      "status": "unhealthy",
+      "details": { "error": "Process not found" }
+    },
+    "audit_trail": []
+  },
+  {
+    "id": "health_1773003232",
+    "timestamp": "2026-03-09T01:53:52.555052",
+    "level": "warning",
+    "actor": "health_monitor",
+    "action": "component_unhealthy",
+    "target": "postgresql",
+    "context": {
+      "status": "unhealthy",
+      "details": {
+        "error": "connection to server at \"localhost\" (::1), port 5432 failed: Connection refused (0x0000274D/10061)\n\tIs the server running on that host and accepting TCP/IP connections?\nconnection to server at \"localhost\" (127.0.0.1), port 5432 failed: Connection refused (0x0000274D/10061)\n\tIs the server running on that host and accepting TCP/IP connections?\n"
+      }
+    },
+    "audit_trail": []
+  }
+]

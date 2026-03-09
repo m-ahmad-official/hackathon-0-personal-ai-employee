@@ -1,0 +1,19 @@
+{
+  "id": "a2348e05-3217-4e6e-9ed9-67dcba27909e",
+  "timestamp": "2026-03-09T04:03:51.595498",
+  "type": "social.post.published",
+  "source": "social-mcp",
+  "priority": "normal",
+  "data": {
+    "platform": "facebook",
+    "post_id": "123_456",
+    "reach": 150
+  },
+  "retry_count": 0,
+  "max_retries": 3,
+  "last_error": null,
+  "consumed_by": [
+    "dashboard_updater",
+    "ceo_briefing"
+  ]
+}
