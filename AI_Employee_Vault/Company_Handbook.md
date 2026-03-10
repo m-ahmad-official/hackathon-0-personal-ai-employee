@@ -1,7 +1,7 @@
 ---
-last_updated: 2026-02-28
-version: 1.1
-tier: silver
+last_updated: 2026-03-09
+version: 2.0
+tier: gold
 ---
 
 # Company Handbook
@@ -22,37 +22,63 @@ This handbook defines the operating principles, communication standards, and dec
 - All data stays local unless explicitly authorized to share
 - Never store sensitive credentials in plain text
 - Use environment variables for all API keys and secrets
-- Encrypt logs when containing sensitive information
+- Encrypt logs when containing sensitive information (PII, financial data)
 - Minimize data retention - delete after purpose served
+- **Gold Tier**: Receipt files in `Done/` are permanent - never delete them
 
 ### 2. Human-in-the-Loop (HITL)
-- **Sensitive actions require approval**: Payments, email sends to new contacts, social media posts
+- **Sensitive actions require approval**: Payments, email sends to new contacts, social media posts, financial transactions
 - **Approval workflow**: Create file in `/Pending_Approval/`, wait for human to move to `/Approved/`
 - **Never auto-approve**: If uncertain, always ask for human review
 - **Silver Tier additions**:
   - WhatsApp responses to new contacts require approval
   - LinkedIn posts always require approval
   - Browser automation sessions must be pre-approved
+- **Gold Tier additions** (ALL require approval):
+  - ✅ Odoo invoice creation (draft OK, posting REQUIRES approval)
+  - ✅ Record payment (financial transaction)
+  - ✅ Any Odoo write operation (customer creation, product updates)
+  - ✅ All social media posts (Facebook, Instagram, Twitter)
+  - ✅ Accessing browser sessions (WhatsApp, LinkedIn)
+  - ✅ Changing system configuration
 
 ### 3. Transparency
 - Log all actions with timestamps (ISO 8601)
-- Maintain clear audit trail in `/Logs/`
+- Maintain clear audit trail in `/Logs/` (per-process files)
 - Report status to Dashboard.md after every significant action
 - Document decisions in Plan.md files
 - Include approval chain of custody in logs
+- **Gold Tier**: Every external action creates a receipt file in `Done/` (immutable record)
+- **Gold Tier**: Emit events to Event Bus for real-time workflows
+- **Gold Tier**: Health monitoring provides system-wide observability
 
 ### 4. Fail Gracefully
 - If uncertain, ask for help rather than guess
 - If API fails, retry with exponential backoff (max 3 attempts)
 - If component crashes, alert human via Dashboard and continue monitoring
 - Never make up data or hallucinate credentials
-- Implement circuit breakers for external services
+- **Gold Tier**: Implement circuit breakers for all external services
+  - After 5 failures, circuit opens for 60 seconds
+  - Automatically recovers after cooling period
+  - Prevents cascade failures and API lockouts
+- **Gold Tier**: Health server detects failures automatically
 
-### 5. Least Privilege (Silver Tier)
+### 5. Least Privilege & Security
 - Use OAuth scopes to limit API access (gmail.readonly, gmail.send)
 - Run watchers under separate user accounts if possible
 - Restrict file permissions (vault: 700, logs: 600)
 - Never store credentials in code - use environment variables
+- **Gold Tier**: All external API credentials stored in MCP server `.env` files (never commit)
+- **Gold Tier**: Per-process audit logs prevent cross-contamination and corruption
+- **Gold Tier**: Health endpoints localhost-only (no external access)
+- **Gold Tier**: Event bus files inherit vault permissions
+
+### 6. Observability & Compliance (Gold Tier)
+- Monitor system health via `health_server.py` endpoints
+- Track all external actions with Receipt files (Done/)
+- Use audit logs for compliance reporting (GDPR, HIPAA considerations)
+- Implement alerts for circuit breaker opens, health check failures
+- Retain logs for 90 days (archived, gzipped)
 
 ---
 
@@ -91,13 +117,267 @@ This handbook defines the operating principles, communication standards, and dec
 
 ---
 
-## Silver Tier Components & Protocols
+## All Tiers: Components & Protocols
 
-### Gmail Watcher (`watchers/gmail_watcher.py`)
+### Gmail Watcher (`watchers/gmail_watcher.py`) - Silver+
 **Purpose**: Poll Gmail API for unread IMPORTANT emails and create action items.
 
 **Configuration**:
 - Only processes emails marked as IMPORTANT by Gmail
+- Poll every 60 seconds (configurable)
+- Creates files in `Needs_Action/` with `EMAIL_*.md` format
+
+**Audit Logging**: ✅ All email detection actions logged
+**HITL**: ✅ New contacts require approval; known contacts auto-respond
+
+---
+
+### WhatsApp Watcher (`watchers/whatsapp_watcher.py`) - Silver+
+**Purpose**: Monitor WhatsApp Web chats for unread messages.
+
+**Configuration**:
+- Uses Playwright with persistent browser context
+- Session stored in `session/` (encrypted by WhatsApp)
+- Poll every 30 seconds
+
+**Audit Logging**: ✅ All message detections logged
+**HITL**: ✅ New contacts require approval; known contacts auto-respond
+
+---
+
+### Scheduler (`scheduler/scheduler.py`) - Silver+
+**Purpose**: Cron-based task automation for scheduled jobs.
+
+**Configuration**:
+- Uses `config.yaml` for job definitions
+- Timezone-aware scheduling
+- Supports Python callable jobs
+
+**Audit Logging**: ✅ Job executions logged
+**HITL**: ❌ Not applicable (runs approved tasks only)
+
+---
+
+### Approved Executor (`watchers/approved_executor.py`) - Silver+
+**Purpose**: Watch `/Approved/` folder and execute approved actions.
+
+**Workflow**:
+1. Monitor `/Approved/` for new files
+2. Parse file to determine action type
+3. Execute corresponding skill/MCP tool
+4. Move result to `Done/` with receipts
+5. Create event in Event Bus
+
+**Audit Logging**: ✅ All executions logged with approver (future)
+**HITL**: ✅ Only executes items already approved by human
+
+---
+
+### Odoo MCP Server (`mcp-servers/odoo-mcp/server.py`) - Gold Tier
+**Purpose**: Integrate with Odoo 19+ via JSON-RPC for accounting/CRM.
+
+**Tools**:
+- `search_customers` - Search customers by email/name
+- `create_invoice` - Create draft invoice (requires approval)
+- `post_invoice` - Post/validate invoice (requires approval)
+- `record_payment` - Record payment for invoice (requires approval)
+- `get_account_balance` - Get AR/AP balances (read-only)
+- `list_recent_invoices` - Query recent invoices (read-only)
+
+**Configuration** (`mcp-servers/odoo-mcp/.env`):
+```
+ODOO_URL=http://localhost:8069
+ODOO_DB=odoo
+ODOO_USERNAME=admin
+ODOO_PASSWORD=admin
+```
+
+**Docker Deployment**: `docker-compose up -d` (auto-initializes DB)
+
+**Error Recovery**: ✅ Circuit breaker (5 failures → open 60s), retry 3x
+**Audit Logging**: ✅ Per-process logs, receipt creation (`ODOO_INVOICE_CREATE_*`, `ODOO_INVOICE_POST_*`)
+**HITL**: ✅ All write operations (create, post, payment) require approval
+
+---
+
+### Social Media MCP Server (`mcp-servers/social-mcp/server.py`) - Gold Tier
+**Purpose**: Unified posting to Facebook, Instagram, Twitter.
+
+**Tools**:
+- `facebook_post` - Post text/link/image to Facebook Page
+- `facebook_get_insights` - Get page metrics (reach, engagement, followers)
+- `instagram_post` - Post image with caption to Instagram Business
+- `twitter_tweet` - Post tweet (text, link, media)
+- `twitter_get_timeline` - Fetch recent tweets
+- `twitter_get_mentions` - Fetch mentions
+
+**Configuration** (`mcp-servers/social-mcp/.env`):
+```
+FACEBOOK_PAGE_ID=your_page_id
+FACEBOOK_ACCESS_TOKEN=your_page_access_token
+INSTAGRAM_BUSINESS_ID=your_ig_business_id
+TWITTER_BEARER_TOKEN=your_bearer_token
+TWITTER_API_KEY=your_api_key
+TWITTER_API_SECRET=your_api_secret
+TWITTER_ACCESS_TOKEN=your_access_token
+TWITTER_ACCESS_SECRET=your_access_secret
+```
+
+**Error Recovery**: ✅ Per-platform circuit breakers (facebook, instagram, twitter)
+**Audit Logging**: ✅ Per-process logs, receipt creation (`FACEBOOK_POST_*`, `INSTAGRAM_POST_*`, `TWITTER_TWEET_*`)
+**HITL**: ✅ All posts require approval
+
+---
+
+### Audit Logger (`utils/audit/logger.py`) - Gold Tier
+**Purpose**: Structured JSON logging with rotation, query, compliance.
+
+**Features**:
+- Per-process log files: `Logs/YYYY-MM-DD.proc_PID.json` (no corruption)
+- Absolute path resolution (project root based)
+- AuditEntry schema: UUID, timestamp, actor, action, target, parameters, result, duration_ms, error, audit_trail
+- Daily rotation + size-based (10MB max)
+- Gzip archival after 1 day, 90-day retention
+- Query interface with filters (date, action, actor, level)
+- Compliance report generation (actions by type, approval usage, errors)
+
+**Receipt Files**: External actions create markdown receipts in `Done/` with full frontmatter.
+
+**Integration**: All MCP servers use this logger.
+
+---
+
+### Health Monitor (`utils/error_recovery/health_server.py`) - Gold Tier
+**Purpose**: HTTP health checks for production monitoring.
+
+**Endpoints**:
+- `GET /health` - Overall status (healthy/degraded/unhealthy)
+- `GET /health/ready` - Readiness probe (all deps ready)
+- `GET /health/live` - Liveness probe (process alive)
+- `GET /metrics` - JSON metrics for Prometheus/Grafana
+- `GET /status` - Detailed component status
+
+**Monitored Components**:
+- Odoo (HTTP check)
+- social-mcp (process check - expected unhealthy as MCP)
+- PostgreSQL (Docker container health)
+- Disk space (>1GB free)
+- Memory usage (>500MB free)
+
+**Startup**: `python utils/error_recovery/health_server.py --port 8080 --interval 30`
+
+---
+
+### Event Bus (`utils/event_bus/`) - Gold Tier
+**Purpose**: Decoupled cross-domain communication via file-based events.
+
+**Core Classes**:
+- `Event` - Event data (id, timestamp, type, source, priority, data, retry_count, max_retries, consumed_by)
+- `EventStore` - Persistence to `Events/` with atomic writes
+- `EventConsumer` - Base class for consumers with handler registry
+
+**Consumers**:
+- `dashboard_consumer.py` - Updates Dashboard.md on relevant events
+- `email_odoo_consumer.py` - Creates Odoo invoices from email events
+
+**Event Flow**:
+1. MCP server emits event → `Events/{timestamp}_{type}_{source}_{id}.json`
+2. Consumer picks up → moves to `Events/processed/{timestamp}_{type}_{source}_{id}_{consumer}.json`
+3. On failure → moves to `Events/error/` after max retries
+
+**Event Types**:
+- `odoo.invoice.created`
+- `odoo.invoice.posted`
+- `social.post.published`
+- `email.received`
+- `workflow.completed`
+
+---
+
+### Dashboard Updater (`utils/dashboard_updater.py`) - Gold Tier
+**Purpose**: Auto-update `Dashboard.md` with live metrics.
+
+**Metrics Fetched**:
+- Health: Overall status, uptime, component health
+- Odoo: AR balance, recent invoices, overdue count, total invoiced (7D)
+- Social: Facebook/Instagram/Twitter posts (from audit logs, last 24h)
+- Tasks: Completed today, this week (from `Done/` count)
+
+**Update Cycle**: Every 5 minutes (configurable)
+**Manual**: `python utils/dashboard_updater.py --once`
+
+**Integration**: Also emits events on update completion.
+
+---
+
+### Agent Skills (`.claude/skills/`) - Gold Tier
+
+**analyze_audit_logs**:
+- Queries audit logs with filters
+- Generates markdown, JSON, CSV reports
+- Trend analysis (by day, actor, action)
+- Compliance statistics
+
+**email_to_odoo_invoice**:
+- Detects invoice intent in emails
+- Extracts customer and line items
+- Creates draft Odoo invoice (requires approval)
+- Sends confirmation email
+
+**generate_weekly_briefing**:
+- CEO weekly report
+- Aggregates: Odoo financials, social metrics, audit analytics, health status
+- Auto-generated in `Briefings/`
+
+**manage_odoo_accounting**:
+- Search customers
+- Create invoices
+- Post invoices
+- Record payments
+- Query balances
+
+**post_to_social_media**:
+- Multi-platform posting (Facebook, Instagram, Twitter)
+- Auto-formatting per platform
+- Hashtag optimization
+- Approval workflow integration
+
+---
+
+### Production Scripts - Gold Tier
+
+**start_all.sh**:
+- Starts services in order: Odoo (Docker) → Health Monitor → Dashboard Updater → Event Bus Consumers → Watchers → Scheduler
+- Waits for Odoo health
+- Logs PID files to `utils/*.pid`, `scheduler/scheduler.pid`, `watchers/*.pid`
+
+**stop_all.sh**:
+- Gracefully stops all processes (reads PIDs)
+- Stops Docker containers
+- Removes PID files
+
+**status.sh**:
+- Shows process status (running/stopped)
+- Docker container status
+- Health check summary
+- Event bus status
+- Recent logs tail
+
+---
+
+### Ralph Wiggum Stop Hook (`.claude/stop-hooks/ralph_wiggum.py`) - Gold Tier
+**Purpose**: Keep Claude Code running autonomously until all work is done.
+
+**Behavior**:
+- Checks `Needs_Action/` for pending items
+- If pending > 0, prevents exit (returns `{"action": "continue"}`)
+- If pending == 0, allows exit
+- Configurable max iterations and completion checks
+
+**Usage**:
+```
+/ralph-loop "Process all Needs_Action items" --max-iterations 10
+```
 - Creates `EMAIL_<subject>_<timestamp>.md` in `/Needs_Action/`
 - Includes: from, subject, message_id, thread_id, priority, received timestamp
 
